@@ -1,22 +1,56 @@
-document.getElementById("convert").addEventListener("click", convertOPMLToCsv);
+// TODO: change back to on button click
+// document.getElementById("convert").addEventListener("click", fileTransform);
+document.addEventListener("click", fileTransform);
+
+/**
+ * TODO: rename this function
+ * @param {Node} parentNode
+ */
+function buildCsvFromRootNode(node, csvDocument) {
+  // First append text to row
+
+  // Then loop
+
+  // Bottom of NodeList
+  if (!node.children.length) return;
+
+  // Add new row
+
+  for (let i = 0; i < node.childElementCount; i++) {
+    console.log("Node number:", i);
+    let childNode = node.children[i];
+    console.log("childNode text is:", childNode.getAttribute("text"));
+
+    // Loop through root nodes
+
+    // Append new row
+    //   csvDocument += row + "\r\n";
+  }
+
+  // Make this loop through all children
+
+  return getChildNode(parentNode.children);
+}
 
 /**
  * Convert the input OPML to CSV and trigger a download
  */
-function convertOPMLToCsv() {
-  let xmlDoc = parseInputToXML();
-  let csvDoc = convertXmlToCsv(xmlDoc);
-
-  downloadCsv(csvDoc);
+function fileTransform() {
+  const xmlDocument = parseInputToXml();
+  const csvDocument = convertXmlToCsv(xmlDocument);
+  console.log(csvDocument);
+  //   doAutoDownloadCsv();
 }
 
 /**
  * Parse input text into XML using browser build in DOM parser.
+ *
+ * @returns {XMLDocument}
  */
-function parseInputToXML() {
-  //   let content = document.getElementById("content").value;
+function parseInputToXml() {
+  //   const content = document.getElementById("content").value;
   // TODO: REMOVE TEMP DATA
-  let content = `<?xml version="1.0" encoding="UTF-8"?>
+  const content = `<?xml version="1.0" encoding="UTF-8"?>
 <opml version="2.0">
   <head>
     <title></title>
@@ -35,105 +69,45 @@ function parseInputToXML() {
   </body>
 </opml>
 `;
-  let xmlDoc = new DOMParser().parseFromString(content, "text/xml");
 
-  console.log("Parsing input to XML");
-  console.log(xmlDoc);
+  const xmlDocument = new DOMParser().parseFromString(content, "text/xml");
 
-  return xmlDoc;
+  return xmlDocument;
 }
 
 /**
  * Convert parsed XMLDocument to a CSV array then trigger auto download
  *
- * @param {XML} xmlDoc
+ * @param {XML} xmlDocument
  */
-function convertXmlToCsv(xmlDoc) {
-  // Declare a CSV datatype to house the final output which will be downloaded
-  let csvDoc = "data:text/csv;charset=utf-8,";
+function convertXmlToCsv(xmlDocument) {
+  let csvHeader = "data:text/csv;charset=utf-8,";
 
-  // Register max width to know where to place step and expectation
-  let maxWidth = 0;
+  let maxWidth = 0,
+    col = 0,
+    csvDocument;
 
-  // Register current width to know how many commas to insert for column consistency
-  let parentCol = 0;
+  const documentRootNode = xmlDocument.getElementsByTagName("body")[0];
 
-  /**
-   * ISSUE
-   * If obtaining a elements by tag name, the output is a HTMLCollection
-   * which is an array that loses parent/children relationship.
-   *
-   * Temp solution is to use 1 single parent node as object
-   */
-  let docRootNode = xmlDoc.getElementsByTagName("outline")[0];
-
-  // TODO: loop thru root nodes to create more rows
-  console.log("docRootNode have content:");
-  console.log(docRootNode);
-  console.log("docRootNode children count:", docRootNode.childElementCount);
-
-  // Loop thru
-  let rootNode, rootText;
-
-  for (let i = 0; i < docRootNode.childElementCount; i++) {
-    rootNode = docRootNode.childNodes[i];
-    console.log("childNode has type: ", typeof rootNode);
-    console.log(rootNode);
-    // Set parent text
-    rootText = rootNode.getAttribute("text");
-
-    console.log(rootText);
-
-    // Obtain children nodes
-    childrenNodes = rootNode.childrenNodes;
-    console.log(childrenNodes);
+  if (!documentRootNode.children.length) {
+    let csvData = buildCsvFromRootNode(documentRootNode);
+    csvDocument = csvHeader + csvData.map((e) => e.join(",")).join("\n");
+  } else {
+    // sth bad happens jk
   }
 
-  // Sadly object does not have forEach method
-  //   rootNodes.forEach((rootNode) => {});
+  // Align last 2 non-empty cells in each row to same column
+  //   doAlignLastTwoColumns(csvDocument);
 
-  // rows.forEach(function (rowArray) {
-  //   let row = rowArray.join(",");
-
-  //   // add new line to csv
-  //   csvDoc += row + "\r\n";
-  // });
-
-  const getNodeText = (node) => {
-    let nodes = [];
-    let children = node.children;
-
-    children.forEach((child) => {
-      nodes.push(child.childNodes[0]);
-    });
-  };
-
-  const getChildNode = (node) => {
-    return node.children;
-  };
-
-  // Start loop
-  // while (Content.text !== "") {
-  //   // need to account for certain formats that has empty li as styled bullets
-  //   let text = content.text;
-  //   let content = content.childNode;
-
-  //   // Add text to csv cell
-  //   // Array.append()
-
-  //   max++;
-  // }
-
-  // Then separate effort to move the last 2 non-empty cells in each row to the same column
-
-  return csvDoc;
+  return csvDocument;
 }
 
 /**
  * Trigger auto download of the CSV file
  *
- * @param {CSV} data
+ * @param {String} csvDocument
  */
-function downloadCsv(data) {
-  // download logic here
+function doAutoDownloadCsv(csvDocument) {
+  let encodedUri = encodeURI(csvDocument);
+  window.open(encodedUri);
 }
