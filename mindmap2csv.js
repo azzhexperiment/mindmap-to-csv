@@ -8,7 +8,7 @@ document.addEventListener("click", fileTransform);
 function buildCsvFromRootNode(node, csvDocument) {
   // First append text to row
 
-  // Then loop
+  // Then recursively get child text if any
 
   // Bottom of NodeList
   // TODO: enum possible error types?
