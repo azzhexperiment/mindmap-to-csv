@@ -1,55 +1,32 @@
-// TODO: change back to on button click
-// document.getElementById("convert").addEventListener("click", fileTransform);
-document.addEventListener("click", fileTransform);
+const downloadButton = document.getElementById("convert");
 
-/**
- * @param {Node} parentNode
- */
-function buildCsvFromRootNode(node, csvDocument) {
-  // First append text to row
+let csvDocument = "data:text/csv;charset=utf-8,",
+  col = 0;
 
-  // Then recursively get child text if any
-
-  // Bottom of NodeList
-  // TODO: enum possible error types?
-  // ^ is it still necessary if accomplished in function before that
-
-  // TODO: figure out how to get object length or how to descend
-  if (!node.children.length) return 0;
-
-  // Add new row
-
-  for (let i = 0; i < node.childElementCount; i++) {
-    console.log("Node number:", i);
-    let childNode = node.children[i];
-    console.log("childNode text is:", childNode.getAttribute("text"));
-
-    // Loop through root nodes
-
-    // Append new row
-    //   csvDocument += row + "\r\n";
-  }
-
-  // Make this loop through all children
-
-  return getChildNode(parentNode.children);
-}
+downloadButton.addEventListener("click", fileTransform);
 
 /**
  * Convert the input OPML to CSV and trigger a download
  */
 function fileTransform() {
   const xmlDocument = parseInputToXml();
-  const csvDocument = convertXmlToCsv(xmlDocument);
+  convertXmlToCsv(xmlDocument);
 
   // TODO: list enum possible response types
   // no nodes, no content, does not start with <outline> etc
   if (csvDocument !== 0) {
+    console.log("Final output");
     console.log(csvDocument);
-    // doAutoDownloadCsv();
+
+    doAutoDownloadCsv();
   } else {
     window.alert("Invalid document content. Nothing parsed.");
   }
+
+  // Reset app
+  csvDocument = "data:text/csv;charset=utf-8,";
+
+  return;
 }
 
 /**
@@ -69,10 +46,18 @@ function parseInputToXml() {
   </head>
   <body>
 <outline text="Top level root node">
-  <outline text="child L1 - 010">
+  <outline text="L1 - 100">
   </outline>
-  <outline text="child L1 - 020">
-    <outline text="child L2 - 021 ">
+  <outline text="L1 - 200">
+    <outline text="L2 - 210">
+    </outline>
+    <outline text="L2 - 220">
+        <outline text="L3 - 221">
+        </outline>
+    </outline>
+  </outline>
+  <outline text="L1 - 300">
+    <outline text="L2 - 310">
     </outline>
   </outline>
 </outline>
@@ -91,50 +76,60 @@ function parseInputToXml() {
  * @param {XMLDocument} xmlDocument
  */
 function convertXmlToCsv(xmlDocument) {
-  let csvHeader = "data:text/csv;charset=utf-8,";
-
-  let maxWidth = 0,
-    col = 0,
-    csvDocument,
-    documentRootNode;
+  let maxWidth = 0;
 
   // This assumes opening tag inside <body> to be <outline>
   // A valid assumption since we are supposed to work with OPML
   // This reduces the computation effort as compared to parsing <body> first
-  if (xmlDocument.getElementsByTagName("outline")[0]) {
-    documentRootNode = xmlDocument.getElementsByTagName("outline")[0];
-  } else {
-    return 0;
-  }
+  let documentRootNode = xmlDocument.getElementsByTagName("outline")[0] ?? "";
 
+  console.log("RootNode");
+  console.log(documentRootNode);
+
+  // FIXME: This assumes at least 1 children. What if there is just a root node?
   if (documentRootNode.children.length) {
-    // TODO: cast documentRootNode.children from HTMLCollection to object
-    console.log(documentRootNode.children);
-
-    let csvData = buildCsvFromRootNode(documentRootNode);
-
-    if (csvData !== 0) {
-      csvDocument = csvHeader + csvData.map((e) => e.join(",")).join("\n");
-    } else {
-      console.log("csvDocument is not mapped");
-    }
+    csvDocument = buildCsvFromNode(documentRootNode, csvDocument);
   } else {
     // TODO: enum possible outcomes
+    // TODO: log self instead?
     csvDocument = "This document has no content";
   }
+}
 
-  // Align last 2 non-empty cells in each row to same column
-  //   doAlignLastTwoColumns(csvDocument);
+/**
+ * @param {Node} node
+ * @param {String} csvDocument
+ */
+function buildCsvFromNode(node) {
+  csvDocument += node.getAttribute("text");
+
+  if (node.children.length) {
+    csvDocument += ",";
+    for (let i = 0; i < node.children.length; i++) {
+      // Save the number of columns to space out
+      col = !i ? node.children.length : col;
+      buildCsvFromNode(node.children[i]);
+    }
+  } else {
+    csvDocument += "\r\n";
+    for (let i = 0; i < col; i++) {
+      csvDocument += ",";
+    }
+  }
 
   return csvDocument;
 }
 
 /**
  * Trigger auto download of the CSV file
+ * TODO: figure out why this called multiple times
  *
  * @param {String} csvDocument
  */
-function doAutoDownloadCsv(csvDocument) {
-  let encodedUri = encodeURI(csvDocument);
-  window.open(encodedUri);
+function doAutoDownloadCsv() {
+  var encodedUri = encodeURI(csvDocument);
+  var link = document.createElement("a");
+  link.setAttribute("href", encodedUri);
+  link.setAttribute("download", "my_data.csv");
+  link.click();
 }
