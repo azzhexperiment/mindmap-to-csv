@@ -1,7 +1,7 @@
-const downloadButton = document.getElementById("convert");
-
 let csvDocument = "data:text/csv;charset=utf-8,",
-  col = [];
+  col = 0;
+
+const downloadButton = document.getElementById("convert");
 
 downloadButton.onclick = fileTransform;
 
@@ -14,16 +14,11 @@ function fileTransform() {
   convertXmlToCsv(xmlDocument);
   doAutoDownloadCsv();
 
-  console.log("xmlDocument");
-  console.log(xmlDocument);
-
   console.log("Final output");
   console.log(csvDocument);
 
   // Reset app
   csvDocument = "data:text/csv;charset=utf-8,";
-
-  return;
 }
 
 /**
@@ -33,6 +28,7 @@ function fileTransform() {
  */
 function parseInputToXml() {
   //   const content = document.getElementById("content").value;
+  // TODO: enable get data from localStorage
   // TODO: REMOVE TEMP DATA
   const content = `<?xml version="1.0" encoding="UTF-8"?>
 <opml version="2.0">
@@ -221,8 +217,6 @@ function parseInputToXml() {
 }
 
 /**
- * Convert parsed XMLDocument to a CSV array then trigger auto download
- *
  * @param {XMLDocument} xmlDocument
  */
 function convertXmlToCsv(xmlDocument) {
@@ -231,12 +225,12 @@ function convertXmlToCsv(xmlDocument) {
   // This assumes opening tag inside <body> to be <outline>
   // A valid assumption since we are supposed to work with OPML
   // This reduces the computation effort as compared to parsing <body> first
-  let documentRootNode = xmlDocument.getElementsByTagName("outline")[0] ?? "";
+  const rootNode = xmlDocument.getElementsByTagName("outline")[0] ?? "";
 
   // FIXME: This assumes at least 1 children. What if there is just a root node?
   // TODO: figure out if ^ is even a valid problem
-  if (documentRootNode.children.length) {
-    csvDocument = buildCsvFromNode(documentRootNode, csvDocument);
+  if (isNodeHasChildren(rootNode)) {
+    buildCsvFromNode(rootNode);
   } else {
     // TODO: enum possible outcomes
     // TODO: log self instead?
@@ -245,39 +239,53 @@ function convertXmlToCsv(xmlDocument) {
 }
 
 /**
+ * FIXME: current col count based on no. of immediate childNodes, not depth
+ *
  * @param {Node} node
- * @param {String} csvDocument
  */
 function buildCsvFromNode(node) {
-  csvDocument += node.getAttribute("text");
+  csvDocument += node.getAttribute("text").trim();
 
-  if (node.children.length) {
+  if (isNodeHasChildren(node)) {
     csvDocument += ",";
+
     for (let i = 0; i < node.children.length; i++) {
+      console.log(node.children[i].getAttribute("text"));
       // Save the number of columns to space out
-      col.append(node.children.length - 1);
+      col = i === 0 ? node.children.length : col;
+
+      console.log("Col count is:", i === 0 ? node.children.length : col);
+
       buildCsvFromNode(node.children[i]);
     }
   } else {
+    console.log("Hit bottom. Node has no children.");
+    console.log("============================================================");
+
+    console.log("Finished 1 row. Current col count is:", col, "current doc:");
+    console.log(csvDocument);
+
+    console.log("============================================================");
+
     csvDocument += "\r\n";
     for (let i = 1; i < col; i++) {
       csvDocument += ",";
     }
   }
-
-  return csvDocument;
 }
 
 /**
- * Trigger auto download of the CSV file
- * TODO: figure out why this called multiple times
- *
- * @param {String} csvDocument
+ * Generate a download link for the CSV output and append it to convert button,
+ * then triggers auto download of the CSV file
  */
 function doAutoDownloadCsv() {
-  var encodedUri = encodeURI(csvDocument);
-  var link = document.createElement("a");
+  const encodedUri = encodeURI(csvDocument);
+  const link = document.createElement("a");
   link.setAttribute("href", encodedUri);
   link.setAttribute("download", "my_data.csv");
   link.click();
+}
+
+function isNodeHasChildren(node) {
+  return node.children.length ? true : false;
 }
