@@ -1,7 +1,15 @@
-let csvDocument = "data:text/csv;charset=utf-8,",
-  col = 0;
+/******************************************************************************\
+  GLOBAL CONSTANTS
+\******************************************************************************/
 
 const downloadButton = document.getElementById("convert");
+
+/******************************************************************************\
+  GLOBAL VARIABLES
+\******************************************************************************/
+
+let csvDocument = "data:text/csv;charset=utf-8,",
+  col = [];
 
 downloadButton.onclick = fileTransform;
 
@@ -240,6 +248,7 @@ function convertXmlToCsv(xmlDocument) {
 
 /**
  * FIXME: current col count based on no. of immediate childNodes, not depth
+ * TODO: use another array for current depth count, tgt with sibling count
  *
  * @param {Node} node
  */
@@ -247,30 +256,41 @@ function buildCsvFromNode(node) {
   csvDocument += node.getAttribute("text").trim();
 
   if (isNodeHasChildren(node)) {
+    col.push(node.children.length);
+
+    console.log("Nodes per column:", col);
+
     csvDocument += ",";
 
     for (let i = 0; i < node.children.length; i++) {
-      console.log(node.children[i].getAttribute("text"));
-      // Save the number of columns to space out
-      col = i === 0 ? node.children.length : col;
-
-      console.log("Col count is:", i === 0 ? node.children.length : col);
-
       buildCsvFromNode(node.children[i]);
     }
   } else {
-    console.log("Hit bottom. Node has no children.");
-    console.log("============================================================");
-
-    console.log("Finished 1 row. Current col count is:", col, "current doc:");
-    console.log(csvDocument);
-
-    console.log("============================================================");
-
     csvDocument += "\r\n";
-    for (let i = 1; i < col; i++) {
-      csvDocument += ",";
+
+    let currentCount = col[col.length - 1];
+    let siblingCount = col[col.length - 2];
+
+    console.log("Sibling count", siblingCount);
+
+    if (currentCount === 1) {
+      for (let i = 0; i < col.length; i++) {
+        csvDocument += ",";
+      }
+
+      while (siblingCount === 1) {
+        col.pop();
+        siblingCount = col[col.length - 2];
+      }
+
+      col[col.length - 2] -= 1;
+    } else {
+      //   col[col.length - 1] -= 1;
+      // col = col.slice(-1);
     }
+    // col = col.slice(-1);
+
+    console.log("overall col is:", col);
   }
 }
 
@@ -285,6 +305,10 @@ function doAutoDownloadCsv() {
   link.setAttribute("download", "my_data.csv");
   link.click();
 }
+
+/******************************************************************************\
+  HELPER FUNCTIONS
+\******************************************************************************/
 
 function isNodeHasChildren(node) {
   return node.children.length ? true : false;
