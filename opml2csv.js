@@ -1,3 +1,5 @@
+// @ts-check
+
 /******************************************************************************\
   GLOBAL CONSTANTS
 \******************************************************************************/
@@ -9,7 +11,10 @@ const downloadButton = document.getElementById("convert");
 \******************************************************************************/
 
 let csvDocument = "data:text/csv;charset=utf-8,",
-  col = [];
+  arrChildrenCount = [],
+  currentChildrenCount = 0,
+  currentDepth = 0,
+  deepestDepth = 0;
 
 downloadButton.onclick = fileTransform;
 
@@ -25,8 +30,7 @@ function fileTransform() {
   console.log("Final output");
   console.log(csvDocument);
 
-  // Reset app
-  csvDocument = "data:text/csv;charset=utf-8,";
+  resetApp();
 }
 
 /**
@@ -247,51 +251,37 @@ function convertXmlToCsv(xmlDocument) {
 }
 
 /**
- * FIXME: current col count based on no. of immediate childNodes, not depth
- * TODO: use another array for current depth count, tgt with sibling count
- *
- * @param {Node} node
+ * @param {Object} node
  */
 function buildCsvFromNode(node) {
-  csvDocument += node.getAttribute("text").trim();
+  appendNewCellToCsv(node);
 
   if (isNodeHasChildren(node)) {
-    col.push(node.children.length);
-
-    console.log("Nodes per column:", col);
-
-    csvDocument += ",";
+    updateOverallColumnChildrenCount(node);
+    appendCommaToCsv();
 
     for (let i = 0; i < node.children.length; i++) {
+      updateCurrentDepth();
+      deepestDepth += 1;
       buildCsvFromNode(node.children[i]);
     }
   } else {
-    csvDocument += "\r\n";
+    appendNewRowToCsv();
 
-    let currentCount = col[col.length - 1];
-    let siblingCount = col[col.length - 2];
+    updateCurrentChildrenCount();
+    updateCurrentDepth();
 
-    console.log("Sibling count", siblingCount);
-
-    if (currentCount === 1) {
-      for (let i = 0; i < col.length; i++) {
-        csvDocument += ",";
-      }
-
-      while (siblingCount === 1) {
-        col.pop();
-        siblingCount = col[col.length - 2];
-      }
-
-      col[col.length - 2] -= 1;
-    } else {
-      //   col[col.length - 1] -= 1;
-      // col = col.slice(-1);
+    for (let i = 0; i < currentDepth; i++) {
+      console.log("Adding empty cell");
+      appendCommaToCsv();
     }
-    // col = col.slice(-1);
 
-    console.log("overall col is:", col);
+    updateSiblingProcessCount();
+    updateDepthCountToLastFork();
   }
+
+  console.log("Depth at fork", currentDepth);
+  console.log("Deepest depth", deepestDepth);
 }
 
 /**
@@ -312,4 +302,70 @@ function doAutoDownloadCsv() {
 
 function isNodeHasChildren(node) {
   return node.children.length ? true : false;
+}
+
+function appendNewCellToCsv(node) {
+  csvDocument += node.getAttribute("text").trim();
+}
+
+function appendNewRowToCsv() {
+  csvDocument += "\r\n";
+}
+
+function appendCommaToCsv() {
+  csvDocument += ",";
+}
+
+function updateCurrentDepth() {
+  currentDepth = arrChildrenCount.length - 1;
+  console.log("Current depth is", currentDepth);
+  console.log("--------------------------------------------------------------");
+}
+
+function updateCurrentChildrenCount() {
+  currentChildrenCount = arrChildrenCount[currentDepth - 1];
+
+  console.log("Current column has", currentChildrenCount, "nodes");
+
+  currentChildrenCount === 1
+    ? console.log("Current node has no sibling")
+    : console.log("Unprocessed nodes:", currentChildrenCount - 1);
+
+  console.log("--------------------------------------------------------------");
+}
+
+function updateSiblingProcessCount() {
+  arrChildrenCount[currentDepth - 1] -= 1;
+  console.log("Sibling processed nodes updated");
+
+  updateCurrentChildrenCount();
+  console.log("Nodes per column:", arrChildrenCount);
+}
+
+function updateOverallColumnChildrenCount(node) {
+  arrChildrenCount.push(node.children.length);
+  console.log("Nodes per column:", arrChildrenCount);
+}
+
+function updateDepthCountToLastFork() {
+  let diff = deepestDepth - currentDepth;
+
+  for (let i = 0; i < diff; i++) {
+    arrChildrenCount.pop();
+
+    console.log("Current nodes per column after pop:", arrChildrenCount);
+  }
+
+  deepestDepth = currentDepth;
+}
+
+function getCurrentChildrenCount() {
+  return arrChildrenCount[currentDepth - 1];
+}
+
+function resetApp() {
+  csvDocument = "data:text/csv;charset=utf-8,";
+  arrChildrenCount = [];
+  currentDepth = 0;
+  currentChildrenCount = 0;
 }
