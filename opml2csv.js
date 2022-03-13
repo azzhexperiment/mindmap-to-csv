@@ -12,16 +12,19 @@ const downloadButton = document.getElementById("convert");
 
 let csvDocument = "data:text/csv;charset=utf-8,",
   arrChildrenCount = [],
-  currentChildrenCount = 0,
-  currentDepth = 0,
-  deepestDepth = 0;
+  unprocessedChildrenCount = 0,
+  currentDepth = 0;
 
-downloadButton.onclick = fileTransform;
+/******************************************************************************\
+  INIT
+\******************************************************************************/
+
+downloadButton.onclick = magic;
 
 /**
  * Convert the input OPML to CSV and trigger a download
  */
-function fileTransform() {
+function magic() {
   const xmlDocument = parseInputToXml();
 
   convertXmlToCsv(xmlDocument);
@@ -232,12 +235,10 @@ function parseInputToXml() {
  * @param {XMLDocument} xmlDocument
  */
 function convertXmlToCsv(xmlDocument) {
-  let maxWidth = 0;
-
   // This assumes opening tag inside <body> to be <outline>
   // A valid assumption since we are supposed to work with OPML
   // This reduces the computation effort as compared to parsing <body> first
-  const rootNode = xmlDocument.getElementsByTagName("outline")[0] ?? "";
+  const rootNode = xmlDocument.getElementsByTagName("outline")[0];
 
   // FIXME: This assumes at least 1 children. What if there is just a root node?
   // TODO: figure out if ^ is even a valid problem
@@ -262,26 +263,29 @@ function buildCsvFromNode(node) {
 
     for (let i = 0; i < node.children.length; i++) {
       updateCurrentDepth();
-      deepestDepth += 1;
       buildCsvFromNode(node.children[i]);
     }
-  } else {
-    appendNewRowToCsv();
-
-    updateCurrentChildrenCount();
-    updateCurrentDepth();
-
-    for (let i = 0; i < currentDepth; i++) {
-      console.log("Adding empty cell");
-      appendCommaToCsv();
-    }
-
-    updateSiblingProcessCount();
-    updateDepthCountToLastFork();
   }
 
-  console.log("Depth at fork", currentDepth);
-  console.log("Deepest depth", deepestDepth);
+  updateCurrentProcessedChildrenCount();
+
+  if (unprocessedChildrenCount === 0) {
+    arrChildrenCount.pop();
+    updateCurrentDepth();
+  } else {
+    doPrepareNewRow();
+  }
+}
+
+/**
+ * Append new row to CSV and prepend corresponding number of empty cells
+ */
+function doPrepareNewRow() {
+  appendNewRowToCsv();
+
+  for (let i = 0; i < currentDepth; i++) {
+    appendCommaToCsv();
+  }
 }
 
 /**
@@ -297,13 +301,19 @@ function doAutoDownloadCsv() {
 }
 
 /******************************************************************************\
-  HELPER FUNCTIONS
+ * HELPER FUNCTIONS
 \******************************************************************************/
 
+/**
+ * @param {Element} node
+ */
 function isNodeHasChildren(node) {
   return node.children.length ? true : false;
 }
 
+/**
+ * @param {Element} node
+ */
 function appendNewCellToCsv(node) {
   csvDocument += node.getAttribute("text").trim();
 }
@@ -317,55 +327,29 @@ function appendCommaToCsv() {
 }
 
 function updateCurrentDepth() {
-  currentDepth = arrChildrenCount.length - 1;
+  currentDepth = arrChildrenCount.length;
   console.log("Current depth is", currentDepth);
-  console.log("--------------------------------------------------------------");
 }
 
-function updateCurrentChildrenCount() {
-  currentChildrenCount = arrChildrenCount[currentDepth - 1];
-
-  console.log("Current column has", currentChildrenCount, "nodes");
-
-  currentChildrenCount === 1
-    ? console.log("Current node has no sibling")
-    : console.log("Unprocessed nodes:", currentChildrenCount - 1);
-
-  console.log("--------------------------------------------------------------");
-}
-
-function updateSiblingProcessCount() {
+function updateCurrentProcessedChildrenCount() {
   arrChildrenCount[currentDepth - 1] -= 1;
-  console.log("Sibling processed nodes updated");
+  unprocessedChildrenCount = arrChildrenCount[currentDepth - 1];
 
-  updateCurrentChildrenCount();
-  console.log("Nodes per column:", arrChildrenCount);
+  console.log("Processed nodes:", arrChildrenCount);
+  console.log("Current column unprocessed nodes:", unprocessedChildrenCount);
 }
 
+/**
+ * @param {Element} node
+ */
 function updateOverallColumnChildrenCount(node) {
   arrChildrenCount.push(node.children.length);
+
   console.log("Nodes per column:", arrChildrenCount);
-}
-
-function updateDepthCountToLastFork() {
-  let diff = deepestDepth - currentDepth;
-
-  for (let i = 0; i < diff; i++) {
-    arrChildrenCount.pop();
-
-    console.log("Current nodes per column after pop:", arrChildrenCount);
-  }
-
-  deepestDepth = currentDepth;
-}
-
-function getCurrentChildrenCount() {
-  return arrChildrenCount[currentDepth - 1];
 }
 
 function resetApp() {
   csvDocument = "data:text/csv;charset=utf-8,";
   arrChildrenCount = [];
   currentDepth = 0;
-  currentChildrenCount = 0;
 }
