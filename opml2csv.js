@@ -4,6 +4,8 @@
 // TODO: escape the quotes inside quotes
 // TODO: escape symbols inside the quotes
 // TODO: escape whatever funky symbol that requires escaping
+// TODO: save current branch as v1
+// TODO: fork a branch and refactor code to parse opml into obj for processing
 
 /******************************************************************************\
   GLOBAL CONSTANTS
