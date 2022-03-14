@@ -1,3 +1,5 @@
+// @ts-check
+
 // TODO: wrap cells in quotes to escape the commas inside
 // TODO: escape the quotes inside quotes
 // TODO: escape symbols inside the quotes
@@ -14,14 +16,20 @@ const downloadButton = document.getElementById("convert");
 \******************************************************************************/
 
 let csvDocument = "data:text/csv;charset=utf-8,",
-  col = [];
+  arrChildrenCount = [],
+  unprocessedChildrenCount = 0,
+  currentDepth = 0;
 
-downloadButton.onclick = fileTransform;
+/******************************************************************************\
+  INIT
+\******************************************************************************/
+
+downloadButton.onclick = magic;
 
 /**
  * Convert the input OPML to CSV and trigger a download
  */
-function fileTransform() {
+function magic() {
   const xmlDocument = parseInputToXml();
 
   convertXmlToCsv(xmlDocument);
@@ -30,8 +38,7 @@ function fileTransform() {
   console.log("Final output");
   console.log(csvDocument);
 
-  // Reset app
-  csvDocument = "data:text/csv;charset=utf-8,";
+  resetApp();
 }
 
 /**
@@ -233,12 +240,10 @@ function parseInputToXml() {
  * @param {XMLDocument} xmlDocument
  */
 function convertXmlToCsv(xmlDocument) {
-  let maxWidth = 0;
-
   // This assumes opening tag inside <body> to be <outline>
   // A valid assumption since we are supposed to work with OPML
   // This reduces the computation effort as compared to parsing <body> first
-  const rootNode = xmlDocument.getElementsByTagName("outline")[0] ?? "";
+  const rootNode = xmlDocument.getElementsByTagName("outline")[0];
 
   // FIXME: This assumes at least 1 children. What if there is just a root node?
   // TODO: figure out if ^ is even a valid problem
@@ -252,50 +257,39 @@ function convertXmlToCsv(xmlDocument) {
 }
 
 /**
- * FIXME: current col count based on no. of immediate childNodes, not depth
- * TODO: use another array for current depth count, tgt with sibling count
- *
- * @param {Node} node
+ * @param {Object} node
  */
 function buildCsvFromNode(node) {
-  csvDocument += node.getAttribute("text").trim();
+  appendNewCellToCsv(node);
 
   if (isNodeHasChildren(node)) {
-    col.push(node.children.length);
-
-    console.log("Nodes per column:", col);
-
-    csvDocument += ",";
+    updateOverallColumnChildrenCount(node);
+    appendCommaToCsv();
 
     for (let i = 0; i < node.children.length; i++) {
+      updateCurrentDepth();
       buildCsvFromNode(node.children[i]);
     }
+  }
+
+  updateCurrentProcessedChildrenCount();
+
+  if (unprocessedChildrenCount === 0) {
+    arrChildrenCount.pop();
+    updateCurrentDepth();
   } else {
-    csvDocument += "\r\n";
+    doPrepareNewRow();
+  }
+}
 
-    let currentCount = col[col.length - 1];
-    let siblingCount = col[col.length - 2];
+/**
+ * Append new row to CSV and prepend corresponding number of empty cells
+ */
+function doPrepareNewRow() {
+  appendNewRowToCsv();
 
-    console.log("Sibling count", siblingCount);
-
-    if (currentCount === 1) {
-      for (let i = 0; i < col.length; i++) {
-        csvDocument += ",";
-      }
-
-      while (siblingCount === 1) {
-        col.pop();
-        siblingCount = col[col.length - 2];
-      }
-
-      col[col.length - 2] -= 1;
-    } else {
-      //   col[col.length - 1] -= 1;
-      // col = col.slice(-1);
-    }
-    // col = col.slice(-1);
-
-    console.log("overall col is:", col);
+  for (let i = 0; i < currentDepth; i++) {
+    appendCommaToCsv();
   }
 }
 
@@ -312,9 +306,55 @@ function doAutoDownloadCsv() {
 }
 
 /******************************************************************************\
-  HELPER FUNCTIONS
+ * HELPER FUNCTIONS
 \******************************************************************************/
 
+/**
+ * @param {Element} node
+ */
 function isNodeHasChildren(node) {
   return node.children.length ? true : false;
+}
+
+/**
+ * @param {Element} node
+ */
+function appendNewCellToCsv(node) {
+  csvDocument += node.getAttribute("text").trim();
+}
+
+function appendNewRowToCsv() {
+  csvDocument += "\r\n";
+}
+
+function appendCommaToCsv() {
+  csvDocument += ",";
+}
+
+function updateCurrentDepth() {
+  currentDepth = arrChildrenCount.length;
+  console.log("Current depth is", currentDepth);
+}
+
+function updateCurrentProcessedChildrenCount() {
+  arrChildrenCount[currentDepth - 1] -= 1;
+  unprocessedChildrenCount = arrChildrenCount[currentDepth - 1];
+
+  console.log("Processed nodes:", arrChildrenCount);
+  console.log("Current column unprocessed nodes:", unprocessedChildrenCount);
+}
+
+/**
+ * @param {Element} node
+ */
+function updateOverallColumnChildrenCount(node) {
+  arrChildrenCount.push(node.children.length);
+
+  console.log("Nodes per column:", arrChildrenCount);
+}
+
+function resetApp() {
+  csvDocument = "data:text/csv;charset=utf-8,";
+  arrChildrenCount = [];
+  currentDepth = 0;
 }
