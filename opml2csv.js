@@ -6,6 +6,7 @@
 // TODO: escape whatever funky symbol that requires escaping
 // TODO: save current branch as v1
 // TODO: fork a branch and refactor code to parse opml into obj for processing
+// TODO: convert to react app with tsx
 
 /******************************************************************************\
   GLOBAL CONSTANTS
