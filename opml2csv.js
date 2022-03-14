@@ -1,3 +1,8 @@
+// TODO: wrap cells in quotes to escape the commas inside
+// TODO: escape the quotes inside quotes
+// TODO: escape symbols inside the quotes
+// TODO: escape whatever funky symbol that requires escaping
+
 /******************************************************************************\
   GLOBAL CONSTANTS
 \******************************************************************************/
