@@ -323,7 +323,8 @@ function isNodeHasChildren(node) {
  * @param {Element} node
  */
 function appendNewCellToCsv(node) {
-  csvDocument += node.getAttribute("text").trim();
+  csvDocument +=
+    '"' + node.getAttribute("text").trim().replace('"', '""') + '"';
 }
 
 function appendNewRowToCsv() {
