@@ -1,7 +1,5 @@
 // @ts-check
 
-// TODO: wrap cells in quotes to escape the commas inside
-// TODO: escape the quotes inside quotes
 // TODO: escape symbols inside the quotes
 // TODO: escape whatever funky symbol that requires escaping
 // TODO: save current branch as v1
@@ -33,9 +31,14 @@ downloadButton.onclick = magic;
  * Convert the input OPML to CSV and trigger a download
  */
 function magic() {
-  const xmlDocument = parseInputToXml();
+  const inputFile = document.querySelector("input");
 
-  convertXmlToCsv(xmlDocument);
+  let inputString = parseInputFileToString(inputFile, toString, err);
+  inputString = parseStringToXml(inputString);
+
+  console.log(inputString);
+
+  convertXmlToCsv(input);
   doAutoDownloadCsv();
 
   console.log("Final output");
@@ -47,11 +50,9 @@ function magic() {
 /**
  * Parse input text into XML using browser build in DOM parser.
  *
- * @returns {XMLDocument}
+ * @returns {Promise<String>} inputString
  */
-function parseInputToXml() {
-  //   const content = document.getElementById("content").value;
-  // TODO: enable get data from localStorage
+async function parseInputFileToString() {
   // TODO: REMOVE TEMP DATA
   const content = `<?xml version="1.0" encoding="UTF-8"?>
 <opml version="2.0">
@@ -234,7 +235,23 @@ function parseInputToXml() {
 </opml>
 `;
 
-  const xmlDocument = new DOMParser().parseFromString(content, "text/xml");
+  const input = document.querySelector("input");
+  const inputString = await input.files[0].text().then((text) => text);
+
+  console.log(inputString);
+
+  return inputString;
+}
+
+/**
+ * Parse input text into XML using browser build in DOM parser.
+ *
+ * @param {String} string
+ *
+ * @returns {XMLDocument}
+ */
+function parseStringToXml(string) {
+  const xmlDocument = new DOMParser().parseFromString(string, "text/xml");
 
   return xmlDocument;
 }
