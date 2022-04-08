@@ -35,23 +35,11 @@ downloadButton.onclick = magic;
  * Convert the input OPML to CSV and trigger a download
  */
 function magic() {
-  let inputString = "";
-  const inputFile = document.querySelector("input");
-
   parseInputFileToString().then((string) => {
-    inputString = string;
-
-    console.log("This is after an async function has been called");
-    console.log("Should show a string below not a promise");
-    console.log(inputString);
-
-    let inputXML = parseStringToXml(inputString);
+    let inputXML = parseStringToXml(string);
 
     convertXmlToCsv(inputXML);
     doAutoDownloadCsv();
-
-    console.log("Final output");
-    console.log(csvDocument);
 
     resetApp();
   });
@@ -65,10 +53,6 @@ function magic() {
 async function parseInputFileToString() {
   const input = document.querySelector("input");
   const inputString = await input.files[0].text();
-
-  console.log("This is inside the async function");
-  console.log(inputString);
-  console.log("Should show a resolved message above, not promise");
 
   return inputString;
 }
@@ -184,15 +168,15 @@ function appendCommaToCsv() {
 
 function updateCurrentDepth() {
   currentDepth = arrChildrenCount.length;
-  console.log("Current depth is", currentDepth);
+  //   console.log("Current depth is", currentDepth);
 }
 
 function updateCurrentProcessedChildrenCount() {
   arrChildrenCount[currentDepth - 1] -= 1;
   unprocessedChildrenCount = arrChildrenCount[currentDepth - 1];
 
-  console.log("Processed nodes:", arrChildrenCount);
-  console.log("Current column unprocessed nodes:", unprocessedChildrenCount);
+  //   console.log("Processed nodes:", arrChildrenCount);
+  //   console.log("Current column unprocessed nodes:", unprocessedChildrenCount);
 }
 
 /**
@@ -201,7 +185,7 @@ function updateCurrentProcessedChildrenCount() {
 function updateOverallColumnChildrenCount(node) {
   arrChildrenCount.push(node.children.length);
 
-  console.log("Nodes per column:", arrChildrenCount);
+  //   console.log("Nodes per column:", arrChildrenCount);
 }
 
 function resetApp() {
