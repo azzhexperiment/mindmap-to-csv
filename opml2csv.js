@@ -151,6 +151,8 @@ function isNodeHasChildren(node) {
 }
 
 /**
+ * @TODO escape single quotes here
+ *
  * @param {Element} node
  */
 function appendNewCellToCsv(node) {
