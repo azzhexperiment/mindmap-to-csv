@@ -5,11 +5,16 @@
 	<meta charset="UTF-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Outline to CSV</title>
+
+	<title>Mindmap to CSV</title>
 
 	<style>
 		div {
 			font-size: large;
+		}
+
+		hr {
+			margin: 25px auto;
 		}
 
 		.container {
@@ -23,17 +28,18 @@
 		}
 
 	</style>
+
 	<script defer src="opml2csv.js"></script>
 </head>
 
 <body>
 	<div class="container">
 
-		<h1>Outline to CSV</h1>
+		<h1>Mindmap to CSV</h1>
 
 		<div class="instructions">
 			<h3>Instructions</h3>
-			<p>
+
 			<ol>
 				<li>From any mindmap tool, export your mindmap as OPML</li>
 				<li>Import <code>.opml</code> file here</li>
@@ -42,11 +48,11 @@
 				<li>Copy the formatted data into your Shopee QA test case
 					spreadsheet</li>
 			</ol>
-			</p>
 		</div>
 
 		<div>
 			<h3>Upload</h3>
+
 			<p class="box">
 				<input type="file" id="upload" name="upload"
 					accept="application/xml, text/xml, text/x-opml, .opml">
@@ -55,6 +61,31 @@
 
 		<div id="convert">
 			<button type="button">Convert!</button>
+		</div>
+
+		<hr>
+
+		<div class="readme">
+			<h3>Notes</h3>
+
+			<p>This app is still being (inactively) developed and there are many
+				defects:</p>
+
+			<ol>
+				<li>No escape mechanism for most special characters (to be
+					added)</li>
+				<li>No support for the last 2 columns - Steps and Expected
+					Results.</li>
+				<li>No build in template headers (the top few rows in QA
+					spreadsheet).</li>
+				<li>On MacOS, Numbers app will mess up the formatting due to
+					implicit assumptions made with delimiter. Probably won't fix
+					since Numbers is not the targeted app.</li>
+				<li>Very ugly UI here (low priority).</li>
+				<li>Not hosted on internal services (can't find GitLab pages,
+					not sure if enabled, will also check with platform QA side).
+				</li>
+			</ol>
 		</div>
 
 		<hr>
