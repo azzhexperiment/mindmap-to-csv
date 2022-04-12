@@ -7,32 +7,60 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>Outline to CSV</title>
 
+	<style>
+		div {
+			font-size: large;
+		}
+
+		.container {
+			width: 800px;
+			margin: auto
+		}
+
+		.box {
+			border: 1px solid black;
+			padding: 5px
+		}
+
+	</style>
 	<script defer src="opml2csv.js"></script>
 </head>
 
 <body>
-	<h1>Outline to CSV</h1>
+	<div class="container">
 
-	<div class="input">
-		<!-- <textarea id="content" cols="30" rows="10"
-			placeholder="Paste OPML content here.">
-		</textarea> -->
+		<h1>Outline to CSV</h1>
 
-		<label for="upload">Upload your OPML</label>
+		<div class="instructions">
+			<h3>Instructions</h3>
+			<p>
+			<ol>
+				<li>From any mindmap tool, export your mindmap as OPML</li>
+				<li>Import <code>.opml</code> file here</li>
+				<li>Import the downloaded <code>my_data.csv</code> into Google
+					Spreadsheet</li>
+				<li>Copy the formatted data into your Shopee QA test case
+					spreadsheet</li>
+			</ol>
+			</p>
+		</div>
 
-		<input type="file" id="upload" name="upload"
-			accept="application/xml, text/xml, text/x-opml, .opml">
+		<div>
+			<h3>Upload</h3>
+			<p class="box">
+				<input type="file" id="upload" name="upload"
+					accept="application/xml, text/xml, text/x-opml, .opml">
+			</p>
+		</div>
+
+		<div id="convert">
+			<button type="button">Convert!</button>
+		</div>
+
+		<hr>
+
+		<footer>Thank you!</footer>
 	</div>
-
-	<hr>
-
-	<div class="convert" id="convert">
-		<button type="button">Convert!</button>
-	</div>
-
-	<hr>
-
-	<footer>Thank you! Footer here</footer>
 </body>
 
 </html>
