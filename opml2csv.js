@@ -10,7 +10,7 @@
   GLOBAL CONSTANTS
 \******************************************************************************/
 
-const downloadButton = document.getElementById("convert");
+const DOWNLOAD = document.getElementById("convert");
 
 /******************************************************************************\
   GLOBAL VARIABLES
@@ -19,13 +19,14 @@ const downloadButton = document.getElementById("convert");
 let csvDocument = "data:text/csv;charset=utf-8,",
   arrChildrenCount = [],
   unprocessedChildrenCount = 0,
-  currentDepth = 0;
+  currentDepth = 0,
+  depths = [];
 
 /******************************************************************************\
   INIT
 \******************************************************************************/
 
-downloadButton.onclick = magic;
+DOWNLOAD.onclick = magic;
 
 /******************************************************************************\
   WHERE MAGIC HAPPENS
