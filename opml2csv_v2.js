@@ -10,23 +10,25 @@
   GLOBAL CONSTANTS
 \******************************************************************************/
 
-const DOWNLOAD = document.getElementById("convert");
+const CONVERT = document.getElementById("convert");
+const ALIGN_COUNT = document.getElementById("align-count")["value"];
 
 /******************************************************************************\
   GLOBAL VARIABLES
 \******************************************************************************/
 
 let csvDocument = "data:text/csv;charset=utf-8,",
+  arrStrings = [],
   arrChildrenCount = [],
+  arrDepths = [],
   unprocessedChildrenCount = 0,
-  currentDepth = 0,
-  depths = [];
+  currentDepth = 0;
 
 /******************************************************************************\
   INIT
 \******************************************************************************/
 
-DOWNLOAD.onclick = magic;
+CONVERT.onclick = magic;
 
 /******************************************************************************\
   WHERE MAGIC HAPPENS
@@ -52,10 +54,7 @@ function magic() {
  * @returns {Promise<String>} inputString
  */
 async function parseInputFileToString() {
-  const input = document.querySelector("input");
-  const inputString = await input.files[0].text();
-
-  return inputString;
+  return await document.querySelector("input").files[0].text();
 }
 
 /**
@@ -75,19 +74,13 @@ function parseStringToXml(string) {
  * @param {XMLDocument} xmlDocument
  */
 function convertXmlToCsv(xmlDocument) {
-  // This assumes opening tag inside <body> to be <outline>
-  // A valid assumption since we are supposed to work with OPML
-  // This reduces the computation effort as compared to parsing <body> first
   const rootNode = xmlDocument.getElementsByTagName("outline")[0];
 
-  // FIXME: This assumes at least 1 children. What if there is just a root node?
-  // TODO: figure out if ^ is even a valid problem
   if (isNodeHasChildren(rootNode)) {
     buildCsvFromNode(rootNode);
   } else {
-    // TODO: enum possible outcomes
-    // TODO: log self instead?
-    csvDocument = "This document has no content";
+    // TODO: what other possible outcomes are there?
+    window.alert("This document has no content");
   }
 }
 
@@ -95,25 +88,92 @@ function convertXmlToCsv(xmlDocument) {
  * @param {Object} node
  */
 function buildCsvFromNode(node) {
-  appendNewCellToCsv(node);
+  buildTextArrayFromNode(node);
 
-  if (isNodeHasChildren(node)) {
-    updateOverallColumnChildrenCount(node);
-    appendCommaToCsv();
+  console.log(arrStrings);
 
-    for (let i = 0; i < node.children.length; i++) {
+  buildCsvFromTextArray();
+
+  //   appendNewCellToCsv(node);
+
+  //   if (isNodeHasChildren(node)) {
+  //     updateOverallColumnChildrenCount(node);
+  //     appendCommaToCsv();
+
+  //     for (let i = 0; i < node.children.length; i++) {
+  //       updateCurrentDepth();
+  //       buildCsvFromNode(node.children[i]);
+  //     }
+  //   }
+
+  //   updateCurrentProcessedChildrenCount();
+
+  //   if (unprocessedChildrenCount === 0) {
+  //     arrChildrenCount.pop();
+  //     updateCurrentDepth();
+  //   } else {
+  //     doPrepareNewRow();
+  //   }
+
+  /**
+   * @param {Object} node
+   */
+  function buildTextArrayFromNode(node) {
+    arrStrings.push(getCleanTextFromNode(node));
+
+    if (isNodeHasChildren(node)) {
+      updateOverallColumnChildrenCount(node);
+      //   appendCommaToCsv();
+
+      for (let i = 0; i < node.children.length; i++) {
+        updateCurrentDepth();
+        buildTextArrayFromNode(node.children[i]);
+      }
+    }
+
+    arrDepths.push(currentDepth);
+
+    updateCurrentProcessedChildrenCount();
+
+    if (unprocessedChildrenCount === 0) {
+      arrChildrenCount.pop();
       updateCurrentDepth();
-      buildCsvFromNode(node.children[i]);
+    } else {
+      // add new row and prepend empty cells
+      arrStrings.push("\r\n");
+
+      for (let i = 0; i < currentDepth; i++) {
+        arrStrings.push(",");
+      }
+    }
+
+    /**
+     * @param {Element} node
+     *
+     * @returns {String}
+     */
+    function getCleanTextFromNode(node) {
+      return '"' + node.getAttribute("text").trim().replace('"', '""') + '"';
     }
   }
 
-  updateCurrentProcessedChildrenCount();
-
-  if (unprocessedChildrenCount === 0) {
-    arrChildrenCount.pop();
-    updateCurrentDepth();
-  } else {
-    doPrepareNewRow();
+  function buildCsvFromTextArray() {
+    //   appendNewCellToCsv(node);
+    //   if (isNodeHasChildren(node)) {
+    //     updateOverallColumnChildrenCount(node);
+    //     appendCommaToCsv();
+    //     for (let i = 0; i < node.children.length; i++) {
+    //       updateCurrentDepth();
+    //       buildCsvFromNode(node.children[i]);
+    //     }
+    //   }
+    //   updateCurrentProcessedChildrenCount();
+    //   if (unprocessedChildrenCount === 0) {
+    //     arrChildrenCount.pop();
+    //     updateCurrentDepth();
+    //   } else {
+    //     doPrepareNewRow();
+    //   }
   }
 }
 
@@ -144,29 +204,19 @@ function doAutoDownloadCsv() {
  * HELPER FUNCTIONS
 \******************************************************************************/
 
-/**
- * @param {Element} node
- */
-function isNodeHasChildren(node) {
-  return node.children.length ? true : false;
-}
-
-/**
- * @TODO escape single quotes here
- *
- * @param {Element} node
- */
-function appendNewCellToCsv(node) {
-  csvDocument +=
-    '"' + node.getAttribute("text").trim().replace('"', '""') + '"';
-}
-
 function appendNewRowToCsv() {
   csvDocument += "\r\n";
 }
 
 function appendCommaToCsv() {
   csvDocument += ",";
+}
+
+/**
+ * @param {Element} node
+ */
+function isNodeHasChildren(node) {
+  return node.children.length ? true : false;
 }
 
 function updateCurrentDepth() {
@@ -178,8 +228,8 @@ function updateCurrentProcessedChildrenCount() {
   arrChildrenCount[currentDepth - 1] -= 1;
   unprocessedChildrenCount = arrChildrenCount[currentDepth - 1];
 
-  //   console.log("Processed nodes:", arrChildrenCount);
-  //   console.log("Current column unprocessed nodes:", unprocessedChildrenCount);
+  // console.log("Processed nodes:", arrChildrenCount);
+  // console.log("Current column unprocessed nodes:", unprocessedChildrenCount);
 }
 
 /**
@@ -187,12 +237,15 @@ function updateCurrentProcessedChildrenCount() {
  */
 function updateOverallColumnChildrenCount(node) {
   arrChildrenCount.push(node.children.length);
-
-  //   console.log("Nodes per column:", arrChildrenCount);
 }
 
+/**
+ * Re-initiate global constants
+ */
 function resetApp() {
   csvDocument = "data:text/csv;charset=utf-8,";
+  arrDepths = [];
   arrChildrenCount = [];
+  unprocessedChildrenCount = 0;
   currentDepth = 0;
 }

@@ -29,7 +29,7 @@
 
 	</style>
 
-	<script defer src="opml2csv.js"></script>
+	<script defer src="opml2csv_v2.js"></script>
 </head>
 
 <body>
@@ -59,8 +59,36 @@
 			</p>
 		</div>
 
+		<div>
+			<p>
+				Number of right columns to align (default 0, max 2):
+				<input type="number" name="align-count" id="align-count" min="0"
+					max="2" value="0">
+			</p>
+
+		</div>
+
 		<div id="convert">
 			<button type="button">Convert!</button>
+		</div>
+
+		<hr>
+
+		<div class="readme">
+			<h3>Introduction</h3>
+
+			<p>Hi there, thanks for using the outline to CSV converter.</p>
+
+			<p>Why I chose to convert OPML to CSV instead of native exports of
+				mindmap apps is because every mindmap app I've seen has their
+				own markup syntax, so in order to support as many apps as
+				possible in the shortest time, I opted to support just
+				<code>.opml</code> files which is a common export format that
+				major mindmap tools support.
+			</p>
+
+			<p>This also means the in-app formatting of the mindmaps are lost in
+				the process.</p>
 		</div>
 
 		<hr>
@@ -74,8 +102,9 @@
 			<ol>
 				<li>No escape mechanism for most special characters (to be
 					added)</li>
-				<li>No support for the last 2 columns - Steps and Expected
-					Results.</li>
+				<li>No support for right column alignment, everything is left
+					aligned (will add feature to support right columns by
+					specifying number of columms to align).</li>
 				<li>No build in template headers (the top few rows in QA
 					spreadsheet).</li>
 				<li>On MacOS, Numbers app will mess up the formatting due to
