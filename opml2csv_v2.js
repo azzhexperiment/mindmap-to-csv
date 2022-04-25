@@ -18,6 +18,7 @@ const ALIGN_COUNT = document.getElementById("align-count")["value"];
 \******************************************************************************/
 
 let csvDocument = "data:text/csv;charset=utf-8,",
+  arrStrings = [],
   arrChildrenCount = [],
   arrDepths = [],
   unprocessedChildrenCount = 0,
@@ -87,9 +88,11 @@ function convertXmlToCsv(xmlDocument) {
  * @param {Object} node
  */
 function buildCsvFromNode(node) {
-  const arr = buildTextArrayFromNode(node);
+  buildTextArrayFromNode(node);
 
-  buildCsvFromTextArray(arr);
+  console.log(arrStrings);
+
+  buildCsvFromTextArray();
 
   //   appendNewCellToCsv(node);
 
@@ -114,13 +117,9 @@ function buildCsvFromNode(node) {
 
   /**
    * @param {Object} node
-   *
-   * @returns {Array<String>}
    */
   function buildTextArrayFromNode(node) {
-    let arr = new Array();
-
-    getCleanTextFromNode(node);
+    arrStrings.push(getCleanTextFromNode(node));
 
     if (isNodeHasChildren(node)) {
       updateOverallColumnChildrenCount(node);
@@ -141,29 +140,24 @@ function buildCsvFromNode(node) {
       updateCurrentDepth();
     } else {
       // add new row and prepend empty cells
-      arr.push("\r\n");
+      arrStrings.push("\r\n");
 
       for (let i = 0; i < currentDepth; i++) {
-        arr.push(",");
+        arrStrings.push(",");
       }
     }
 
-    console.log(arr);
-
-    return arr;
-
     /**
      * @param {Element} node
+     *
+     * @returns {String}
      */
     function getCleanTextFromNode(node) {
-      arr.push('"' + node.getAttribute("text").trim().replace('"', '""') + '"');
+      return '"' + node.getAttribute("text").trim().replace('"', '""') + '"';
     }
   }
 
-  /**
-   * @param {Array<String>} arr
-   */
-  function buildCsvFromTextArray(arr) {
+  function buildCsvFromTextArray() {
     //   appendNewCellToCsv(node);
     //   if (isNodeHasChildren(node)) {
     //     updateOverallColumnChildrenCount(node);
