@@ -7,39 +7,37 @@
 // TODO: convert to react app with tsx
 
 /******************************************************************************\
-  GLOBAL CONSTANTS
+  GLOBAL
 \******************************************************************************/
-
-const END_OF_ROW = "THIS_IS_AN_END_OF_ROW_TOKEN";
 
 const CONVERT = document.getElementById("convert");
 const ALIGN_COUNT = document.getElementById("align-count")["value"];
 
-/******************************************************************************\
-  GLOBAL VARIABLES
-\******************************************************************************/
+let csvDocument = "data:text/csv;charset=utf-8,";
 
-let csvDocument = "data:text/csv;charset=utf-8,",
-  arrStrings = [],
-  arrChildrenCount = [],
-  unprocessedChildrenCount = 0,
-  currentDepth = 0,
+let strings,
+  childrenCounts,
+  rowStrings,
+  columns = [];
+
+let unprocessedChildrenCount,
+  currentDepth,
   maxDepth = 0;
 
 /******************************************************************************\
   INIT
 \******************************************************************************/
 
-CONVERT.onclick = magic;
+CONVERT.onclick = convertInputOpmlFileToCsv;
 
 /******************************************************************************\
-  WHERE MAGIC HAPPENS
+  LOGIC
 \******************************************************************************/
 
 /**
  * Convert the input OPML to CSV and trigger a download
  */
-function magic() {
+function convertInputOpmlFileToCsv() {
   parseInputFileToString().then((string) => {
     let inputXML = parseStringToXml(string);
 
@@ -93,13 +91,13 @@ function buildCsvFromNode(node) {
   buildTextArrayFromNode(node);
   buildCsvFromTextArray();
 
-  console.log(arrStrings);
+  console.log(strings);
 
   /**
    * @param {Object} node
    */
   function buildTextArrayFromNode(node) {
-    arrStrings.push(getCleanTextFromNode(node));
+    strings.push(getCleanTextFromNode(node));
 
     if (isNodeHasChildren(node)) {
       updateOverallColumnChildrenCount(node);
@@ -114,22 +112,26 @@ function buildCsvFromNode(node) {
     updateCurrentProcessedChildrenCount();
 
     if (unprocessedChildrenCount === 0) {
-      arrChildrenCount.pop();
+      childrenCounts.pop();
       updateCurrentDepth();
     } else {
-      arrStrings.push("\r\n");
+      strings.push("\r\n");
 
       for (let i = 0; i < currentDepth; i++) {
-        arrStrings.push(",");
+        strings.push(",");
       }
     }
   }
 
   function buildCsvFromTextArray() {
-    for (let i = 0; i < arrStrings.length - 1; i++) {
-      csvDocument += arrStrings[i];
+    // TODO: splice here by \r\n into array of arrays
 
-      if (arrStrings[i] !== "," && arrStrings[i] !== "\r\n") {
+    rows = strings.filter();
+
+    for (let i = 0; i < strings.length - 1; i++) {
+      csvDocument += strings[i];
+
+      if (strings[i] !== "," && strings[i] !== "\r\n") {
         csvDocument += ",";
       }
 
@@ -174,7 +176,7 @@ function getCleanTextFromNode(node) {
 }
 
 function updateCurrentDepth() {
-  currentDepth = arrChildrenCount.length;
+  currentDepth = childrenCounts.length;
 }
 
 /**
@@ -187,15 +189,15 @@ function updateMaxDepth(currentDepth) {
 }
 
 function updateCurrentProcessedChildrenCount() {
-  arrChildrenCount[currentDepth - 1] -= 1;
-  unprocessedChildrenCount = arrChildrenCount[currentDepth - 1];
+  childrenCounts[currentDepth - 1] -= 1;
+  unprocessedChildrenCount = childrenCounts[currentDepth - 1];
 }
 
 /**
  * @param {Element} node
  */
 function updateOverallColumnChildrenCount(node) {
-  arrChildrenCount.push(node.children.length);
+  childrenCounts.push(node.children.length);
 }
 
 /**
@@ -203,7 +205,9 @@ function updateOverallColumnChildrenCount(node) {
  */
 function resetApp() {
   csvDocument = "data:text/csv;charset=utf-8,";
-  arrChildrenCount = [];
+  strings = [];
+  childrenCounts = [];
+  rows = [];
   unprocessedChildrenCount = 0;
   currentDepth = 0;
   maxDepth = 0;
