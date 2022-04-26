@@ -117,7 +117,6 @@ function buildCsvFromNode(node) {
       arrChildrenCount.pop();
       updateCurrentDepth();
     } else {
-      //   arrStrings.push(END_OF_ROW); // EOR token for column alignment
       arrStrings.push("\r\n");
 
       for (let i = 0; i < currentDepth; i++) {
@@ -130,7 +129,7 @@ function buildCsvFromNode(node) {
     for (let i = 0; i < arrStrings.length - 1; i++) {
       csvDocument += arrStrings[i];
 
-      if (arrStrings[i] !== ",") {
+      if (arrStrings[i] !== "," && arrStrings[i] !== "\r\n") {
         csvDocument += ",";
       }
 
