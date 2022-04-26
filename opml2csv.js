@@ -91,6 +91,8 @@ function convertXmlToCsv(xmlDocument) {
   }
 }
 
+// TODO: add EOL token at end of each row for easy identification
+
 /**
  * @param {Object} node
  */
