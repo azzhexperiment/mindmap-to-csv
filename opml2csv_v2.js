@@ -10,6 +10,8 @@
   GLOBAL CONSTANTS
 \******************************************************************************/
 
+const END_OF_ROW = "THIS_IS_AN_END_OF_ROW_TOKEN";
+
 const CONVERT = document.getElementById("convert");
 const ALIGN_COUNT = document.getElementById("align-count")["value"];
 
@@ -20,9 +22,9 @@ const ALIGN_COUNT = document.getElementById("align-count")["value"];
 let csvDocument = "data:text/csv;charset=utf-8,",
   arrStrings = [],
   arrChildrenCount = [],
-  arrDepths = [],
   unprocessedChildrenCount = 0,
-  currentDepth = 0;
+  currentDepth = 0,
+  maxDepth = 0;
 
 /******************************************************************************\
   INIT
@@ -43,6 +45,8 @@ function magic() {
 
     convertXmlToCsv(inputXML);
     doAutoDownloadCsv();
+
+    console.log(csvDocument);
 
     resetApp();
   });
@@ -65,9 +69,7 @@ async function parseInputFileToString() {
  * @returns {XMLDocument}
  */
 function parseStringToXml(string) {
-  const xmlDocument = new DOMParser().parseFromString(string, "text/xml");
-
-  return xmlDocument;
+  return new DOMParser().parseFromString(string, "text/xml");
 }
 
 /**
@@ -89,31 +91,9 @@ function convertXmlToCsv(xmlDocument) {
  */
 function buildCsvFromNode(node) {
   buildTextArrayFromNode(node);
-
-  console.log(arrStrings);
-
   buildCsvFromTextArray();
 
-  //   appendNewCellToCsv(node);
-
-  //   if (isNodeHasChildren(node)) {
-  //     updateOverallColumnChildrenCount(node);
-  //     appendCommaToCsv();
-
-  //     for (let i = 0; i < node.children.length; i++) {
-  //       updateCurrentDepth();
-  //       buildCsvFromNode(node.children[i]);
-  //     }
-  //   }
-
-  //   updateCurrentProcessedChildrenCount();
-
-  //   if (unprocessedChildrenCount === 0) {
-  //     arrChildrenCount.pop();
-  //     updateCurrentDepth();
-  //   } else {
-  //     doPrepareNewRow();
-  //   }
+  console.log(arrStrings);
 
   /**
    * @param {Object} node
@@ -123,7 +103,6 @@ function buildCsvFromNode(node) {
 
     if (isNodeHasChildren(node)) {
       updateOverallColumnChildrenCount(node);
-      //   appendCommaToCsv();
 
       for (let i = 0; i < node.children.length; i++) {
         updateCurrentDepth();
@@ -131,60 +110,33 @@ function buildCsvFromNode(node) {
       }
     }
 
-    arrDepths.push(currentDepth);
-
+    updateMaxDepth(currentDepth);
     updateCurrentProcessedChildrenCount();
 
     if (unprocessedChildrenCount === 0) {
       arrChildrenCount.pop();
       updateCurrentDepth();
     } else {
-      // add new row and prepend empty cells
       arrStrings.push("\r\n");
 
       for (let i = 0; i < currentDepth; i++) {
         arrStrings.push(",");
       }
     }
-
-    /**
-     * @param {Element} node
-     *
-     * @returns {String}
-     */
-    function getCleanTextFromNode(node) {
-      return '"' + node.getAttribute("text").trim().replace('"', '""') + '"';
-    }
   }
 
   function buildCsvFromTextArray() {
-    //   appendNewCellToCsv(node);
-    //   if (isNodeHasChildren(node)) {
-    //     updateOverallColumnChildrenCount(node);
-    //     appendCommaToCsv();
-    //     for (let i = 0; i < node.children.length; i++) {
-    //       updateCurrentDepth();
-    //       buildCsvFromNode(node.children[i]);
-    //     }
-    //   }
-    //   updateCurrentProcessedChildrenCount();
-    //   if (unprocessedChildrenCount === 0) {
-    //     arrChildrenCount.pop();
-    //     updateCurrentDepth();
-    //   } else {
-    //     doPrepareNewRow();
-    //   }
-  }
-}
+    for (let i = 0; i < arrStrings.length - 1; i++) {
+      csvDocument += arrStrings[i];
 
-/**
- * Append new row to CSV and prepend corresponding number of empty cells
- */
-function doPrepareNewRow() {
-  appendNewRowToCsv();
+      if (arrStrings[i] !== "," && arrStrings[i] !== "\r\n") {
+        csvDocument += ",";
+      }
 
-  for (let i = 0; i < currentDepth; i++) {
-    appendCommaToCsv();
+      // TODO: add alignment logic here
+
+      //   arrStrings.splice(maxDepth, arrStrings.length);
+    }
   }
 }
 
@@ -204,14 +156,6 @@ function doAutoDownloadCsv() {
  * HELPER FUNCTIONS
 \******************************************************************************/
 
-function appendNewRowToCsv() {
-  csvDocument += "\r\n";
-}
-
-function appendCommaToCsv() {
-  csvDocument += ",";
-}
-
 /**
  * @param {Element} node
  */
@@ -219,17 +163,32 @@ function isNodeHasChildren(node) {
   return node.children.length ? true : false;
 }
 
+/**
+ * @param {Element} node
+ *
+ * @returns {String}
+ */
+function getCleanTextFromNode(node) {
+  // TODO: figure out if double quotes correctly escaped or if needed
+  return '"' + node.getAttribute("text").trim().replace('"', '""') + '"';
+}
+
 function updateCurrentDepth() {
   currentDepth = arrChildrenCount.length;
-  //   console.log("Current depth is", currentDepth);
+}
+
+/**
+ * @param {Number} currentDepth
+ */
+function updateMaxDepth(currentDepth) {
+  if (currentDepth > maxDepth) {
+    maxDepth = currentDepth;
+  }
 }
 
 function updateCurrentProcessedChildrenCount() {
   arrChildrenCount[currentDepth - 1] -= 1;
   unprocessedChildrenCount = arrChildrenCount[currentDepth - 1];
-
-  // console.log("Processed nodes:", arrChildrenCount);
-  // console.log("Current column unprocessed nodes:", unprocessedChildrenCount);
 }
 
 /**
@@ -244,8 +203,8 @@ function updateOverallColumnChildrenCount(node) {
  */
 function resetApp() {
   csvDocument = "data:text/csv;charset=utf-8,";
-  arrDepths = [];
   arrChildrenCount = [];
   unprocessedChildrenCount = 0;
   currentDepth = 0;
+  maxDepth = 0;
 }
