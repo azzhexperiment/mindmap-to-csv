@@ -2,39 +2,37 @@
 
 // TODO: escape symbols inside the quotes
 // TODO: escape whatever funky symbol that requires escaping
-// TODO: save current branch as v1
-// TODO: fork a branch and refactor code to parse opml into obj for processing
 // TODO: convert to react app with tsx
 
 /******************************************************************************\
-  GLOBAL CONSTANTS
+  GLOBAL
 \******************************************************************************/
 
-const downloadButton = document.getElementById("convert");
-
-/******************************************************************************\
-  GLOBAL VARIABLES
-\******************************************************************************/
+const CONVERT = document.getElementById("convert");
 
 let csvDocument = "data:text/csv;charset=utf-8,",
-  arrChildrenCount = [],
-  unprocessedChildrenCount = 0,
-  currentDepth = 0;
+  strings = [],
+  rowStrings = [],
+  childrenCounts = [],
+  maxDepth = 0,
+  alignCount = 0,
+  currentDepth = 0,
+  unprocessedChildrenCount = 0;
 
 /******************************************************************************\
   INIT
 \******************************************************************************/
 
-downloadButton.onclick = magic;
+CONVERT.onclick = convertInputOpmlFileToCsv;
 
 /******************************************************************************\
-  WHERE MAGIC HAPPENS
+  BUSINESS LOGIC
 \******************************************************************************/
 
 /**
  * Convert the input OPML to CSV and trigger a download
  */
-function magic() {
+function convertInputOpmlFileToCsv() {
   parseInputFileToString().then((string) => {
     let inputXML = parseStringToXml(string);
 
@@ -51,42 +49,32 @@ function magic() {
  * @returns {Promise<String>} inputString
  */
 async function parseInputFileToString() {
-  const input = document.querySelector("input");
-  const inputString = await input.files[0].text();
-
-  return inputString;
+  return await document.querySelector("input").files[0].text();
 }
 
 /**
- * Parse input text into XML using browser build in DOM parser.
+ * Parse input text into XML using browser browser built-in DOM parser.
  *
  * @param {String} string
  *
  * @returns {XMLDocument}
  */
 function parseStringToXml(string) {
-  const xmlDocument = new DOMParser().parseFromString(string, "text/xml");
-
-  return xmlDocument;
+  return new DOMParser().parseFromString(string, "text/xml");
 }
 
 /**
+ *
  * @param {XMLDocument} xmlDocument
  */
 function convertXmlToCsv(xmlDocument) {
-  // This assumes opening tag inside <body> to be <outline>
-  // A valid assumption since we are supposed to work with OPML
-  // This reduces the computation effort as compared to parsing <body> first
   const rootNode = xmlDocument.getElementsByTagName("outline")[0];
 
-  // FIXME: This assumes at least 1 children. What if there is just a root node?
-  // TODO: figure out if ^ is even a valid problem
   if (isNodeHasChildren(rootNode)) {
     buildCsvFromNode(rootNode);
   } else {
-    // TODO: enum possible outcomes
-    // TODO: log self instead?
-    csvDocument = "This document has no content";
+    // TODO: what other possible outcomes are there?
+    window.alert("This document has no content");
   }
 }
 
@@ -94,36 +82,80 @@ function convertXmlToCsv(xmlDocument) {
  * @param {Object} node
  */
 function buildCsvFromNode(node) {
-  appendNewCellToCsv(node);
+  buildTextArrayFromNode(node);
+  buildCsvFromTextArray();
 
-  if (isNodeHasChildren(node)) {
-    updateOverallColumnChildrenCount(node);
-    appendCommaToCsv();
+  /**
+   * Given a node, obtain its cleaned text and recursively get children text.
+   *
+   * @param {Object} node
+   */
+  function buildTextArrayFromNode(node) {
+    strings.push(getCleanTextFromNode(node));
 
-    for (let i = 0; i < node.children.length; i++) {
+    if (isNodeHasChildren(node)) {
+      updateOverallColumnChildrenCount(node);
+
+      for (let i = 0; i < node.children.length; i++) {
+        updateCurrentDepth();
+        buildTextArrayFromNode(node.children[i]);
+      }
+    }
+
+    updateCurrentProcessedChildrenCount();
+
+    if (unprocessedChildrenCount === 0) {
+      childrenCounts.pop();
       updateCurrentDepth();
-      buildCsvFromNode(node.children[i]);
+    } else {
+      strings.push("\r\n");
+
+      // Reduce 1 comma here as Array.join() will inject 1 more later
+      // Will create an extra row of empty commas at the bottom row
+      for (let i = 0; i < currentDepth - 1; i++) {
+        strings.push("");
+      }
     }
   }
 
-  updateCurrentProcessedChildrenCount();
+  /**
+   * Clean up previously obtained strings into rows and join them to output.
+   */
+  function buildCsvFromTextArray() {
+    buildRowStrings();
 
-  if (unprocessedChildrenCount === 0) {
-    arrChildrenCount.pop();
-    updateCurrentDepth();
-  } else {
-    doPrepareNewRow();
-  }
-}
+    alignColumns();
 
-/**
- * Append new row to CSV and prepend corresponding number of empty cells
- */
-function doPrepareNewRow() {
-  appendNewRowToCsv();
+    csvDocument += rowStrings.flat().join();
 
-  for (let i = 0; i < currentDepth; i++) {
-    appendCommaToCsv();
+    /**
+     * Split strings into rows by using "\r\n" as delimiter
+     */
+    function buildRowStrings() {
+      rowStrings.push([]);
+
+      strings.forEach((string) => {
+        rowStrings[rowStrings.length - 1].push(string);
+
+        if (string === "\r\n") {
+          rowStrings.push([]);
+        }
+      });
+    }
+
+    /**
+     * Right align columns based on indicated align count
+     */
+    function alignColumns() {
+      let maxDepth = getMaxDepth();
+      updateAlignCount();
+
+      rowStrings.forEach((row) => {
+        while (row.length < maxDepth) {
+          row.splice(row.length - alignCount - 1, 0, "");
+        }
+      });
+    }
   }
 }
 
@@ -134,6 +166,7 @@ function doPrepareNewRow() {
 function doAutoDownloadCsv() {
   const encodedUri = encodeURI(csvDocument);
   const link = document.createElement("a");
+
   link.setAttribute("href", encodedUri);
   link.setAttribute("download", "my_data.csv");
   link.click();
@@ -151,47 +184,58 @@ function isNodeHasChildren(node) {
 }
 
 /**
- * @TODO escape single quotes here
- *
  * @param {Element} node
+ *
+ * @returns {String}
  */
-function appendNewCellToCsv(node) {
-  csvDocument +=
-    '"' + node.getAttribute("text").trim().replace('"', '""') + '"';
+function getCleanTextFromNode(node) {
+  // TODO: figure out if double quotes correctly escaped or if needed
+  return '"' + node.getAttribute("text").trim().replace('"', '""') + '"';
 }
 
-function appendNewRowToCsv() {
-  csvDocument += "\r\n";
+/**
+ * @returns {Number}
+ */
+function getMaxDepth() {
+  let depths = [];
+
+  rowStrings.forEach((row) => {
+    depths.push(row.length);
+  });
+
+  return Math.max(...depths);
 }
 
-function appendCommaToCsv() {
-  csvDocument += ",";
+function updateAlignCount() {
+  alignCount = document.getElementById("align-count")["value"];
 }
 
 function updateCurrentDepth() {
-  currentDepth = arrChildrenCount.length;
-  //   console.log("Current depth is", currentDepth);
+  currentDepth = childrenCounts.length;
 }
 
 function updateCurrentProcessedChildrenCount() {
-  arrChildrenCount[currentDepth - 1] -= 1;
-  unprocessedChildrenCount = arrChildrenCount[currentDepth - 1];
-
-  //   console.log("Processed nodes:", arrChildrenCount);
-  //   console.log("Current column unprocessed nodes:", unprocessedChildrenCount);
+  childrenCounts[currentDepth - 1] -= 1;
+  unprocessedChildrenCount = childrenCounts[currentDepth - 1];
 }
 
 /**
  * @param {Element} node
  */
 function updateOverallColumnChildrenCount(node) {
-  arrChildrenCount.push(node.children.length);
-
-  //   console.log("Nodes per column:", arrChildrenCount);
+  childrenCounts.push(node.children.length);
 }
 
+/**
+ * Re-initiate global constants
+ */
 function resetApp() {
   csvDocument = "data:text/csv;charset=utf-8,";
-  arrChildrenCount = [];
+  strings = [];
+  rowStrings = [];
+  childrenCounts = [];
+  maxDepth = 0;
+  alignCount = 0;
   currentDepth = 0;
+  unprocessedChildrenCount = 0;
 }
