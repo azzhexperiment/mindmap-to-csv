@@ -29,7 +29,7 @@
 
 	</style>
 
-	<script defer src="opml2csv_v2.js"></script>
+	<script defer src="opml2csv.js"></script>
 </head>
 
 <body>
@@ -100,11 +100,22 @@
 				defects:</p>
 
 			<ol>
+				<li>Chinese punctuations will block processing (pending
+					investigation).</li>
 				<li>No escape mechanism for most special characters (to be
-					added)</li>
-				<li>No support for right column alignment, everything is left
-					aligned (will add feature to support right columns by
-					specifying number of columms to align).</li>
+					added).</li>
+				<li>
+					<del>
+						No support for right column alignment, everything is
+						left
+						aligned (will add feature to support right columns by
+						specifying number of columms to align).
+					</del>
+
+					<ins>
+						Implemented!
+					</ins>
+				</li>
 				<li>No build in template headers (the top few rows in QA
 					spreadsheet).</li>
 				<li>On MacOS, Numbers app will mess up the formatting due to
